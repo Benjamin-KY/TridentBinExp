@@ -184,6 +184,7 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 | Output tokens | 33.0M | 69K |
 | Cache read tokens | 2.66B | 5.55M |
 | Cache hit rate | 97.9% | |
+| Effective input tokens (uncached) | 58.3M | 121K |
 | LLM compute time | 223 hours | 28 min |
 | Estimated cost | ~$14.5K | ~$29 |
 
