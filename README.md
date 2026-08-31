@@ -178,11 +178,23 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 
 - **Model**: Claude Opus 4.6 via GitHub Copilot API. Stock model, publicly available, all safety classifiers active. No fine-tuning, no custom weights. Same thing you get in VS Code. The 13× is all harness.
 - **Timeout**: 2 hours per task
-- **Parallelism**: 4 concurrent tasks per batch
-- **Wall clock**: ~7 days for 502 userspace tasks (4-wide)
+- **Parallelism**: 4 concurrent tasks
+- **Wall clock**: ~7 days for 502 userspace tasks
 - **Infrastructure**: One workstation, Docker Desktop on WSL2
 - **Evaluation framework**: ExploitGym, unmodified
 - **Cost**: ~$14.5K for the 502-task userspace run (Opus 4.6 pricing)
+
+### Userspace Run Stats
+
+| Metric | Value |
+|---|---|
+| LLM requests | 62,068 |
+| Avg requests per task | 129 |
+| Total input tokens | 2.72B |
+| Total output tokens | 33.0M |
+| Cache hit rate | 97.9% of input tokens |
+| Total LLM compute time | 223 hours |
+| Avg LLM time per task | 28 min |
 
 ## Citation
 
