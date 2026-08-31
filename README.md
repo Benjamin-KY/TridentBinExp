@@ -1,20 +1,20 @@
 # Trident
 
-**A domain-specialised agent harness for autonomous binary exploitation.**
+**Custom agent harness for binary exploitation benchmarks.**
 
-Trident wraps a single language model (Claude Opus 4.6) with per-domain tooling, structured prompts, and an anti-stagnation stack to turn it into a competent exploit developer. It's evaluated on [ExploitGym](https://github.com/google/exploitgym) — 869 tasks spanning userspace binaries, Linux kernel bugs, and V8 engine vulnerabilities.
+Trident gives a language model (Claude Opus 4.6) the right tools for the job — domain-specific binary analysis, kernel VM interaction, and V8 exploit delivery — so it stops wasting time on boilerplate and actually writes exploits. Evaluated on [ExploitGym](https://github.com/google/exploitgym), 869 tasks across userspace, kernel, and V8.
 
-The headline result: **13× uplift** over the same model running in a vanilla coding agent. Same LLM, same benchmark, same timeout — just better tools.
+The short version: same model as the vanilla baseline, **13× more on-target exploits**. Turns out the model already knows how to do exploitation — it just needs decent tooling.
 
 ---
 
 ## The Problem
 
-Drop a frontier model into a coding agent and point it at an exploitation task. What happens?
+Give a frontier model a coding agent and an exploitation task. What happens?
 
-It'll spend half its context window writing bash one-liners to parse a README, another quarter fighting serial console escape characters, and the rest running out of time. The model *knows* how to exploit a heap overflow — it just can't get its hands on the binary efficiently enough to do anything about it.
+It spends half its context window writing bash one-liners to parse a README, another quarter fighting serial console escape characters, and runs out of time before it gets anywhere useful. The model *knows* how to exploit a heap overflow — it just burns through its budget on plumbing instead.
 
-Trident fixes the plumbing so the model can focus on the interesting bit.
+Trident handles the plumbing.
 
 ## How It Works
 
@@ -44,11 +44,11 @@ Trident detects the task domain at startup and loads a matched set of tools and 
 - `v8_analyze` — reads the patch, PoC, workspace files, challenge info, and relevant V8 source
 - `v8_send_exploit` — sends a JS file to the challenge service, captures output, detects crashes and flags
 
-Each domain also gets a tailored system prompt — not a generic "you are a helpful assistant" but a structured methodology: what to look at first, common pitfalls, and when to pivot.
+Each domain gets its own system prompt too — not "you are a helpful assistant" boilerplate, but actual exploitation methodology for that target class.
 
 ### Anti-Stagnation
 
-Models love to loop. They'll re-read the same file 15 times, re-run a failing payload with one byte changed, or spend 40 minutes "analysing" when they should be building an exploit. Trident has a five-layer defence against this:
+Models love to loop. They'll re-read the same file 15 times, re-run a failing payload with one byte changed, or spend 40 minutes "analysing" when they should be writing C. Trident has five layers to keep things moving:
 
 1. **Phase enforcement** — soft nudge at 4 analysis calls, hard block at 9. Once you've read the vuln description, *write some code*.
 2. **Stagnation detector** — tracks calls since last meaningful progress. Pivot prompt at 15 calls with no new finding.
@@ -56,7 +56,7 @@ Models love to loop. They'll re-read the same file 15 times, re-run a failing pa
 4. **Tool watchdog** — polls in-flight tool calls, detects hangs.
 5. **Context monitor** — tracks token usage, trims when needed.
 
-The net effect: the model doesn't waste its 2-hour budget going in circles.
+Without this, the model burns through its 2-hour budget going in circles. With it, it actually gets to the exploit.
 
 ![Anti-Stagnation Stack](assets/anti_stagnation.svg)
 
@@ -76,7 +76,7 @@ Task List (869)
                     → results.json + metadata.yml → PR
 ```
 
-Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's customisation is all within the agent — tools get installed during the sanctioned install phase, no pre-computed exploits, no task-specific knowledge baked in.
+Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's customisation is all within the agent — tools get installed during the install phase, no pre-computed exploits, no task-specific knowledge baked in.
 
 ---
 
@@ -86,7 +86,7 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 
 ![Leaderboard Comparison](assets/uplift.svg)
 
-Trident with a model from two generations ago sits second on the leaderboard at the 2-hour mark — and that's on userspace tasks alone, with kernel and V8 still running. The vanilla Opus 4.6 + Claude Code entry manages 16. Same model, same API, all safety guardrails intact, no fine-tuning. The 13× gap is purely agent engineering.
+Trident with a model from two generations ago sits second on the leaderboard at the 2-hour mark — on userspace tasks alone, with kernel and V8 still running. The vanilla Opus 4.6 + Claude Code entry manages 16. Same model, same API, all safety guardrails intact. No fine-tuning, no custom weights. Just better tools.
 
 ### Userspace Breakdown
 
@@ -97,11 +97,11 @@ Trident with a model from two generations ago sits second on the leaderboard at 
 | On-target (after judge) | 209 (41.6%) |
 | Off-target captures | 200 (39.8%) |
 
-The gap between flags captured and on-target is worth noting — the agent often finds a *working* exploit that achieves the objective, but via a different bug than the intended one. ExploitGym's external judge model checks causal necessity, so these count as off-target. Still, 81.5% flag capture rate is a decent indicator that the tooling is doing its job.
+Big gap between flags captured and on-target here. The agent frequently finds a working exploit that gets the flag, but through a different bug than the one the task was testing. ExploitGym uses an external judge model to check whether the exploit actually exercises the intended vulnerability — if it doesn't, it's off-target. The 81.5% flag capture rate at least shows the tools are working; the on-target rate is where we need the agent to be more disciplined about following the provided vulnerability info.
 
 ### Kernel & V8
 
-Currently running with the specialised tooling described above. Early signs are positive — agents are successfully standing up QEMU VMs, connecting to serial consoles, and doing structured vulnerability analysis. Results will be updated here once the full run completes.
+Running now with the specialised tools. Agents are standing up QEMU VMs, connecting to serial consoles, and doing structured vuln analysis. Results here once the run finishes.
 
 ---
 
@@ -109,27 +109,27 @@ Currently running with the specialised tooling described above. Early signs are 
 
 ### Single agent, not multi-agent
 
-Some systems (like [DoGNAVY](https://github.com/DogNavy/DoGNAVY-Exploitation)) use a scout/planner/executor decomposition. That's a solid approach. We went the other way: one agent with good tools.
+Some systems (like [DoGNAVY](https://github.com/DogNavy/DoGNAVY-Exploitation)) split the work across scout, planner, and executor agents. Fair enough — but we went the other way: one agent, good tools.
 
-Why? Exploitation is a deeply stateful process. You need to hold memory layouts, register values, offsets, and partial exploit chains in your head simultaneously. Every time you summarise context for handoff to another agent, you risk losing the detail that makes the difference between `SIGSEGV` and a shell. A single agent keeps all of that in one context window.
+Exploitation is stateful. You need memory layouts, register values, offsets, and half-built exploit chains all in your head at once. Every time you summarise context for a handoff to another agent, you risk losing the detail that makes the difference between `SIGSEGV` and a shell. One context window avoids that.
 
-The tradeoff is that you can't parallelise within a single task. In practice, the 2-hour timeout is generous enough that serial execution works fine — the bottleneck is almost always reasoning quality, not wall-clock parallelism.
+The downside is you can't parallelise within a task. In practice it hasn't mattered — the 2-hour timeout is generous and the bottleneck is reasoning quality, not clock time.
 
-### Tools over prompting
+### Tools beat prompting
 
-We tried elaborate chain-of-thought prompting, multi-step planning frameworks, and structured output schemas. They all helped a bit. What helped *a lot* was giving the model a `crash_analysis` tool that could hand it a clean backtrace instead of raw GDB output.
+We tried chain-of-thought prompting, multi-step planning, structured output schemas. They helped a bit. Giving the model a `crash_analysis` tool that hands back a clean backtrace instead of raw GDB output helped a lot more.
 
-The returns on better tooling were roughly 10× the returns on better prompting, at least for this benchmark.
+For this benchmark, better tools gave us roughly 10× the improvement of better prompts.
 
 ### Why no code?
 
-Trident's tools encode domain-specific exploitation knowledge — structured approaches to kernel privilege escalation, V8 heap manipulation, binary protection bypass. Releasing that as a turnkey package would meaningfully lower the barrier for malicious use. We describe the architecture and methodology here; the implementation stays private.
+The tools encode specific exploitation knowledge — how to do kernel priv esc, V8 heap manipulation, binary protection bypass. We're not keen to ship that as a pip package. Architecture and methodology are described here; the code stays private.
 
 ---
 
 ## Architecture Diagrams
 
-We've put together a set of detailed architecture diagrams as Excalidraw files. You can open them interactively at [excalidraw.com](https://excalidraw.com):
+Detailed architecture diagrams as Excalidraw files — open at [excalidraw.com](https://excalidraw.com) to poke around interactively:
 
 | Diagram | Description |
 |---|---|
@@ -144,11 +144,11 @@ We've put together a set of detailed architecture diagrams as Excalidraw files. 
 
 ## Technical Details
 
-- **Model**: Claude Opus 4.6 via GitHub Copilot API — the standard, publicly available model with **all safety classifiers and guardrails in place**. No fine-tuning, no custom weights, no jailbreaks, no safety bypasses. The same model you'd get through any Copilot-integrated editor. The 13× uplift is purely an agent engineering result.
+- **Model**: Claude Opus 4.6 via GitHub Copilot API. Stock model, publicly available, all safety classifiers active. No fine-tuning, no custom weights. Same thing you get in VS Code. The 13× is all harness.
 - **Timeout**: 2 hours per task
-- **Infrastructure**: Single workstation, Docker Desktop on WSL2
-- **Evaluation framework**: ExploitGym (unmodified)
-- **Estimated cost**: ~$14.5K for the full 502-task userspace run (Opus 4.6 pricing)
+- **Infrastructure**: One workstation, Docker Desktop on WSL2
+- **Evaluation framework**: ExploitGym, unmodified
+- **Cost**: ~$14.5K for the 502-task userspace run (Opus 4.6 pricing)
 
 ## Citation
 
