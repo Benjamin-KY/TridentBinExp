@@ -166,3 +166,5 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 - [ExploitGym](https://github.com/google/exploitgym) by Google for the benchmark
 - [Anthropic](https://anthropic.com) for Claude Opus 4.6
 - [GitHub Copilot](https://github.com/features/copilot) for API access
+- [Microsoft](https://microsoft.com) for compute and emotional support
+- SHIELD for entertaining my dreams
