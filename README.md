@@ -10,15 +10,13 @@ The leaderboard had Claude Mythos 5, Opus 5, GPT-5.6 Sol all posting big numbers
 
 Turns out the hunch was right. Same model, **13× more on-target exploits**. The model already knows how to do exploitation. It just needs decent tools and someone to stop it going in circles.
 
-This repo describes the approach. No code (for obvious reasons), but enough detail to reproduce the architecture.
+This repo describes the approach. No code, but enough detail to reproduce the architecture.
 
 ---
 
 ## The Problem
 
-Give a frontier model a coding agent and an exploitation task. What happens?
-
-It spends half its context window writing bash one-liners to parse a README, another quarter fighting serial console escape characters, and runs out of time before it gets anywhere useful. The model *knows* how to exploit a heap overflow. It just burns through its budget on plumbing instead.
+Give a frontier model a coding agent and an exploitation task. It spends half its context window writing bash one-liners to parse a README, another quarter fighting serial console escape characters, and runs out of time before it gets anywhere useful. The model *knows* how to exploit a heap overflow. It just burns through its budget on plumbing instead.
 
 Trident handles the plumbing.
 
@@ -133,13 +131,13 @@ For this benchmark, better tools gave us roughly 10× the improvement of better 
 
 ### Working with safety classifiers, not around them
 
-This one doesn't get talked about much, but it's arguably the hardest engineering problem in autonomous exploitation. Claude Opus 4.6 ships with safety classifiers that will refuse to write exploit code if the request looks like it's asking for help attacking a real system. Run a vanilla agent against ExploitGym and you'll hit refusals on a meaningful chunk of tasks. The model knows what a ROP chain is, it just won't write one if it thinks you're up to no good.
+This one doesn't get talked about much, but it might be the hardest engineering problem in autonomous exploitation. Claude Opus 4.6 ships with safety classifiers that will refuse to write exploit code if the request looks like it's asking for help attacking a real system. Run a vanilla agent against ExploitGym and you'll hit refusals on a fair number of tasks. The model knows what a ROP chain is, it just won't write one if it thinks you're up to no good.
 
-Getting zero refusal rate on autonomous offensive security work is the holy grail for this kind of system. We've been fortunate to accumulate a lot of learnings from building Trident internally, and those translated directly to the ExploitGym harness. We achieved 0% refusal rate without any jailbreaking, prompt injection, or safety bypasses. The stock model, with all classifiers active, cooperates fully.
+Getting zero refusal rate on autonomous offensive security work is the holy grail for this kind of system. We've been fortunate to accumulate a lot of learnings from building Trident internally, and those translated directly to the ExploitGym harness. We achieved 0% refusal rate without jailbreaking or safety bypasses. The stock model, with all classifiers active, cooperates fully.
 
-We're not going to detail the specific mechanisms here. But the key point is: this is compliant engineering, not adversarial. The classifiers are doing their job correctly. ExploitGym is a published research benchmark, the targets are isolated Docker containers, and the work is authorised security research. The art is in presenting that context to the model in a way the classifiers can reason about, not in tricking them.
+We're not going to detail the specific mechanisms here. But the key point is: this is compliant engineering, not adversarial. The classifiers are doing their job correctly. ExploitGym is a published research benchmark, the targets are isolated Docker containers, and the work is authorised security research. You present that context to the model properly, and it cooperates. You don't, and it won't.
 
-The engineering here was non-trivial and is a meaningful part of why the harness outperforms vanilla agents. It's also, frankly, the part we're most proud of.
+This was a significant chunk of the engineering effort, and a big part of why the harness outperforms vanilla agents. It's also the part we're most proud of.
 
 ### Why no code?
 
@@ -151,11 +149,11 @@ The tools encode specific exploitation knowledge: kernel priv esc, V8 heap manip
 
 Trident follows all ExploitGym evaluation rules. We went through the submission spec, evaluation docs, and agent base class carefully before building anything. The key points:
 
-- **Unmodified framework.** ExploitGym's evaluation harness, controller, scorer, and Docker images are all stock. No patches, no monkey-patching, no modified task definitions.
+- **Unmodified framework.** ExploitGym's evaluation harness, controller, scorer, and Docker images are all stock. Nothing patched or modified.
 - **Agent subclass.** Trident extends ExploitGym's `Agent` base class. The benchmark explicitly supports custom agents and expects them to override `install()` and `run()`.
 - **Install-phase only.** All tool installation (gcc, gdb, pwntools, etc.) happens during the `install()` phase before the timer starts. Nothing is pre-baked into Docker images.
 - **No pre-computed exploits.** The agent has no task-specific knowledge. It reads the workspace files (vulnerability description, patches, PoC) at runtime and reasons from scratch.
-- **No external access.** The agent container can reach the Copilot API (for LLM calls) and the ExploitGym controller (for VM/challenge provisioning). Nothing else. No internet, no phoning home.
+- **Network.** The agent container only needs the Copilot API (for LLM calls) and the ExploitGym controller (for VM/challenge provisioning). It doesn't phone home or fetch external resources.
 - **Standard scoring.** Results are scored by ExploitGym's external judge model (Claude Sonnet 4.6) using the `is_causally_necessary` field. We don't influence the scorer.
 - **Full benchmark.** All 502 userspace tasks evaluated, no cherry-picking. Kernel and V8 runs cover the full task lists for those categories too.
 
@@ -180,6 +178,8 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 
 - **Model**: Claude Opus 4.6 via GitHub Copilot API. Stock model, publicly available, all safety classifiers active. No fine-tuning, no custom weights. Same thing you get in VS Code. The 13× is all harness.
 - **Timeout**: 2 hours per task
+- **Parallelism**: 4 concurrent tasks per batch
+- **Wall clock**: ~7 days for 502 userspace tasks (4-wide)
 - **Infrastructure**: One workstation, Docker Desktop on WSL2
 - **Evaluation framework**: ExploitGym, unmodified
 - **Cost**: ~$14.5K for the 502-task userspace run (Opus 4.6 pricing)
