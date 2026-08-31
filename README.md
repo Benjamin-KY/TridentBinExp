@@ -2,9 +2,15 @@
 
 **Custom agent harness for binary exploitation benchmarks.**
 
-Trident gives a language model (Claude Opus 4.6) the right tools for the job: domain-specific binary analysis, kernel VM interaction, and V8 exploit delivery. Instead of wasting time on boilerplate, the model actually writes exploits. Evaluated on [ExploitGym](https://github.com/sunblaze-ucb/exploitgym), 869 tasks across userspace, kernel, and V8.
+## Background
 
-The short version: same model as the vanilla baseline, **13× more on-target exploits**. The model already knows how to do exploitation. It just needs decent tooling.
+I work on an internal security assessment platform at Microsoft called Trident. It's a proprietary agent harness for offensive security work, not something I can open-source. But when [ExploitGym](https://github.com/sunblaze-ucb/exploitgym) dropped, I wanted to answer a question that had been bugging me: can a well-engineered harness with an older model beat the latest frontier models running vanilla?
+
+The leaderboard had Claude Mythos 5, Opus 5, GPT-5.6 Sol all posting big numbers with generic coding agents. Meanwhile vanilla Opus 4.6 + Claude Code was sitting at 16 on-target. I had a hunch that most of that gap was tooling, not model capability. So I built an ExploitGym-specific version of Trident's architecture to find out.
+
+Turns out the hunch was right. Same model, **13× more on-target exploits**. The model already knows how to do exploitation. It just needs decent tools and someone to stop it going in circles.
+
+This repo describes the approach. No code (for obvious reasons), but enough detail to reproduce the architecture.
 
 ---
 
