@@ -18,13 +18,15 @@ Trident fixes the plumbing so the model can focus on the interesting bit.
 
 ## How It Works
 
-![Trident Architecture](assets/architecture.svg)
+![Trident System Architecture](assets/system_architecture.svg)
 
-*Full architecture diagrams available as [Excalidraw files](assets/) — open them at [excalidraw.com](https://excalidraw.com) for the interactive versions.*
+*Interactive versions of all diagrams available as [Excalidraw files](assets/) — open them at [excalidraw.com](https://excalidraw.com).*
 
 ### Three Prongs (Hence the Name)
 
 Trident detects the task domain at startup and loads a matched set of tools and system prompt:
+
+![Tool Selection by Domain](assets/tool_selection.svg)
 
 **Userspace** — 8 tools for binary exploitation:
 - `check_binary` — runs checksec, dumps protections and architecture
@@ -56,6 +58,8 @@ Models love to loop. They'll re-read the same file 15 times, re-run a failing pa
 
 The net effect: the model doesn't waste its 2-hour budget going in circles.
 
+![Anti-Stagnation Stack](assets/anti_stagnation.svg)
+
 ### Benchmark Pipeline
 
 ```
@@ -79,6 +83,8 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 ## Results
 
 ### The Uplift
+
+![13x Uplift](assets/uplift.svg)
 
 | Configuration | Model | On-Target |
 |---|---|---|

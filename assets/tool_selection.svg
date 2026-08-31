@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="900" height="380" fill="#0d1117" rx="12"/>
+
+  <!-- Task arrives -->
+  <rect x="330" y="15" width="240" height="45" rx="8" fill="#21262d" stroke="#f0f6fc" stroke-width="1.5"/>
+  <text x="450" y="43" text-anchor="middle" fill="#f0f6fc" font-size="14" font-weight="bold">Incoming Task</text>
+
+  <!-- Arrow down splits three ways -->
+  <path d="M450,60 L450,85" stroke="#8b949e" stroke-width="2"/>
+  <rect x="355" y="85" width="190" height="35" rx="6" fill="#21262d" stroke="#8b949e" stroke-width="1"/>
+  <text x="450" y="107" text-anchor="middle" fill="#8b949e" font-size="12">TASK_TYPE detection</text>
+
+  <path d="M400,120 L160,150" stroke="#2ea043" stroke-width="2"/>
+  <path d="M450,120 L450,150" stroke="#388bfd" stroke-width="2"/>
+  <path d="M500,120 L740,150" stroke="#a78bfa" stroke-width="2"/>
+
+  <!-- Userspace column -->
+  <rect x="30" y="150" width="260" height="210" rx="10" fill="#0d1117" stroke="#2ea043" stroke-width="1.5"/>
+  <rect x="30" y="150" width="260" height="32" rx="10" fill="#2ea04320"/>
+  <text x="160" y="172" text-anchor="middle" fill="#2ea043" font-size="14" font-weight="bold">Userspace (8 tools)</text>
+  <text x="48" y="200" fill="#c9d1d9" font-size="11">check_binary</text><text x="190" y="200" fill="#8b949e" font-size="10">checksec + arch</text>
+  <text x="48" y="220" fill="#c9d1d9" font-size="11">crash_analysis</text><text x="190" y="220" fill="#8b949e" font-size="10">core dump triage</text>
+  <text x="48" y="240" fill="#c9d1d9" font-size="11">get_sections</text><text x="190" y="240" fill="#8b949e" font-size="10">ELF structure</text>
+  <text x="48" y="260" fill="#c9d1d9" font-size="11">get_symbols</text><text x="190" y="260" fill="#8b949e" font-size="10">function table</text>
+  <text x="48" y="280" fill="#c9d1d9" font-size="11">interact_with_binary</text><text x="190" y="280" fill="#8b949e" font-size="10">scripted I/O</text>
+  <text x="48" y="305" fill="#6e7681" font-size="10">+ bash, read_file, write_file</text>
+  <rect x="48" y="320" width="225" height="26" rx="4" fill="#2ea04315" stroke="#2ea043" stroke-width="0.5"/>
+  <text x="160" y="338" text-anchor="middle" fill="#2ea043" font-size="10">Prompt: binary exploitation workflow</text>
+
+  <!-- Kernel column -->
+  <rect x="320" y="150" width="260" height="210" rx="10" fill="#0d1117" stroke="#388bfd" stroke-width="1.5"/>
+  <rect x="320" y="150" width="260" height="32" rx="10" fill="#388bfd20"/>
+  <text x="450" y="172" text-anchor="middle" fill="#388bfd" font-size="14" font-weight="bold">Kernel (3 tools)</text>
+  <text x="338" y="200" fill="#c9d1d9" font-size="11">kernel_analyze</text><text x="470" y="200" fill="#8b949e" font-size="10">vuln + config + src</text>
+  <text x="338" y="225" fill="#c9d1d9" font-size="11">kernel_vm_cmd</text><text x="470" y="225" fill="#8b949e" font-size="10">serial console</text>
+  <text x="338" y="250" fill="#c9d1d9" font-size="11">kernel_upload_exploit</text><text x="470" y="250" fill="#8b949e" font-size="10">transfer + compile</text>
+  <text x="338" y="280" fill="#6e7681" font-size="10">+ bash, read_file, write_file</text>
+  <rect x="338" y="320" width="225" height="26" rx="4" fill="#388bfd15" stroke="#388bfd" stroke-width="0.5"/>
+  <text x="450" y="338" text-anchor="middle" fill="#388bfd" font-size="10">Prompt: kernel privilege escalation</text>
+
+  <!-- V8 column -->
+  <rect x="610" y="150" width="260" height="210" rx="10" fill="#0d1117" stroke="#a78bfa" stroke-width="1.5"/>
+  <rect x="610" y="150" width="260" height="32" rx="10" fill="#a78bfa20"/>
+  <text x="740" y="172" text-anchor="middle" fill="#a78bfa" font-size="14" font-weight="bold">V8 (2 tools)</text>
+  <text x="628" y="200" fill="#c9d1d9" font-size="11">v8_analyze</text><text x="760" y="200" fill="#8b949e" font-size="10">patches + PoC + src</text>
+  <text x="628" y="225" fill="#c9d1d9" font-size="11">v8_send_exploit</text><text x="760" y="225" fill="#8b949e" font-size="10">deliver + detect flag</text>
+  <text x="628" y="255" fill="#6e7681" font-size="10">+ bash, read_file, write_file</text>
+  <rect x="628" y="320" width="225" height="26" rx="4" fill="#a78bfa15" stroke="#a78bfa" stroke-width="0.5"/>
+  <text x="740" y="338" text-anchor="middle" fill="#a78bfa" font-size="10">Prompt: V8 engine exploitation</text>
+</svg>
