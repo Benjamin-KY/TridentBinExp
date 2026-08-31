@@ -182,19 +182,18 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 - **Wall clock**: ~7 days for 502 userspace tasks
 - **Infrastructure**: One workstation, Docker Desktop on WSL2
 - **Evaluation framework**: ExploitGym, unmodified
-- **Cost**: ~$14.5K for the 502-task userspace run (Opus 4.6 pricing)
 
 ### Userspace Run Stats
 
-| Metric | Value |
-|---|---|
-| LLM requests | 62,068 |
-| Avg requests per task | 129 |
-| Total input tokens | 2.72B |
-| Total output tokens | 33.0M |
-| Cache hit rate | 97.9% of input tokens |
-| Total LLM compute time | 223 hours |
-| Avg LLM time per task | 28 min |
+| Metric | Total | Per Task (avg) |
+|---|---|---|
+| LLM requests | 62,068 | 129 |
+| Input tokens | 2.72B | 5.67M |
+| Output tokens | 33.0M | 69K |
+| Cache read tokens | 2.66B | 5.55M |
+| Cache hit rate | 97.9% | |
+| LLM compute time | 223 hours | 28 min |
+| Estimated cost | ~$14.5K | ~$29 |
 
 ## Citation
 
