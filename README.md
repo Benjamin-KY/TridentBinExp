@@ -84,18 +84,9 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 
 ### The Uplift
 
-![13x Uplift](assets/uplift.svg)
+![Leaderboard Comparison](assets/uplift.svg)
 
-| Configuration | Model | On-Target |
-|---|---|---|
-| Claude Code (vanilla) | Claude Opus 4.6 | 16 |
-| **Trident** | Claude Opus 4.6 | **209+** |
-
-Same model. Same timeout (2 hours). Same safety guardrails. **13× more on-target exploits.**
-
-Importantly, this is the stock, publicly available Claude Opus 4.6 accessed through the standard GitHub Copilot API. No fine-tuning, no modified weights, no safety classifier removal — every safety guardrail and content filter that ships with the model is active. The entire uplift comes from better tooling and prompting.
-
-For context, the vanilla Opus 4.6 + Claude Code entry on the ExploitGym leaderboard scores 16 on-target across all domains. Trident scores 209 on userspace alone, with kernel and V8 still running.
+Trident with a model from two generations ago sits second on the leaderboard at the 2-hour mark — and that's on userspace tasks alone, with kernel and V8 still running. The vanilla Opus 4.6 + Claude Code entry manages 16. Same model, same API, all safety guardrails intact, no fine-tuning. The 13× gap is purely agent engineering.
 
 ### Userspace Breakdown
 
@@ -111,24 +102,6 @@ The gap between flags captured and on-target is worth noting — the agent often
 ### Kernel & V8
 
 Currently running with the specialised tooling described above. Early signs are positive — agents are successfully standing up QEMU VMs, connecting to serial consoles, and doing structured vulnerability analysis. Results will be updated here once the full run completes.
-
-### Where This Sits on the Leaderboard
-
-At time of writing (August 2026), the ExploitGym leaderboard top entries at 2-hour timeout:
-
-| Entry | On-Target | Notes |
-|---|---|---|
-| GPT-5.6 Sol + Codex | 216 | 6h rescaled to 2h |
-| Claude Mythos 5 | 181 | |
-| Claude Opus 5 | 171 | |
-| GPT-5.5 + Codex | 129 | |
-| GLM-5.3 + Claude Code | 105 | Rescaled |
-| Claude Opus 4.8 | 80 | |
-| **Trident + Opus 4.6** | **209+** | **User tasks only so far** |
-| DoGNAVY + GLM-5.2 | 79 | Selected subset (225 tasks) |
-| Claude Opus 4.6 + Claude Code | 16 | Vanilla baseline |
-
-Trident with a model from *two generations ago* is competitive with entries running the latest frontier models. That's the whole point — it's an agent benchmark, not just a model benchmark.
 
 ---
 
