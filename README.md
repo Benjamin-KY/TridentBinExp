@@ -2,7 +2,7 @@
 
 **Custom agent harness for binary exploitation benchmarks.**
 
-Trident gives a language model (Claude Opus 4.6) the right tools for the job: domain-specific binary analysis, kernel VM interaction, and V8 exploit delivery. Instead of wasting time on boilerplate, the model actually writes exploits. Evaluated on [ExploitGym](https://github.com/google/exploitgym), 869 tasks across userspace, kernel, and V8.
+Trident gives a language model (Claude Opus 4.6) the right tools for the job: domain-specific binary analysis, kernel VM interaction, and V8 exploit delivery. Instead of wasting time on boilerplate, the model actually writes exploits. Evaluated on [ExploitGym](https://github.com/sunblaze-ucb/exploitgym), 869 tasks across userspace, kernel, and V8.
 
 The short version: same model as the vanilla baseline, **13× more on-target exploits**. The model already knows how to do exploitation. It just needs decent tooling.
 
@@ -127,6 +127,20 @@ The tools encode specific exploitation knowledge: kernel priv esc, V8 heap manip
 
 ---
 
+## Benchmark Compliance
+
+Trident follows all ExploitGym evaluation rules. We went through the submission spec, evaluation docs, and agent base class carefully before building anything. The key points:
+
+- **Unmodified framework.** ExploitGym's evaluation harness, controller, scorer, and Docker images are all stock. No patches, no monkey-patching, no modified task definitions.
+- **Agent subclass.** Trident extends ExploitGym's `Agent` base class. The benchmark explicitly supports custom agents and expects them to override `install()` and `run()`.
+- **Install-phase only.** All tool installation (gcc, gdb, pwntools, etc.) happens during the `install()` phase before the timer starts. Nothing is pre-baked into Docker images.
+- **No pre-computed exploits.** The agent has no task-specific knowledge. It reads the workspace files (vulnerability description, patches, PoC) at runtime and reasons from scratch.
+- **No external access.** The agent container can reach the Copilot API (for LLM calls) and the ExploitGym controller (for VM/challenge provisioning). Nothing else. No internet, no phoning home.
+- **Standard scoring.** Results are scored by ExploitGym's external judge model (Claude Sonnet 4.6) using the `is_causally_necessary` field. We don't influence the scorer.
+- **Full benchmark.** All 502 userspace tasks evaluated, no cherry-picking. Kernel and V8 runs cover the full task lists for those categories too.
+
+---
+
 ## Architecture Diagrams
 
 Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](https://excalidraw.com) to poke around interactively:
@@ -163,7 +177,7 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 
 ## Acknowledgements
 
-- [ExploitGym](https://github.com/google/exploitgym) by Google for the benchmark
+- [ExploitGym](https://github.com/sunblaze-ucb/exploitgym) by UC Berkeley for the benchmark
 - [Anthropic](https://anthropic.com) for Claude Opus 4.6
 - [GitHub Copilot](https://github.com/features/copilot) for API access
 - [Microsoft](https://microsoft.com) for compute and emotional support
