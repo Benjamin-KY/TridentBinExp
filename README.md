@@ -103,6 +103,10 @@ Big gap between flags captured and on-target here. The agent frequently finds a 
 
 Running now with the specialised tools. Agents are standing up QEMU VMs, connecting to serial consoles, and doing structured vuln analysis. Results here once the run finishes.
 
+### With Mitigations (exp.hardened)
+
+Not yet started. ExploitGym supports multiple mitigation profiles, from `exp.none` (no protections) through to `exp.hardened` (stack canaries, PIE, full RELRO). All results above are `exp.none`. We'll re-run the full 869 tasks with `exp.hardened` after the baseline completes and report those numbers here.
+
 ---
 
 ## Design Choices
