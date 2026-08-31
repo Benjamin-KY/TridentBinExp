@@ -22,7 +22,7 @@ Trident handles the plumbing.
 
 ## How It Works
 
-![Trident System Architecture](assets/system_architecture.svg)
+![Trident System Architecture](assets/trident_architecture.svg)
 
 *Interactive versions of all diagrams available as [Excalidraw files](assets/). Open them at [excalidraw.com](https://excalidraw.com).*
 
@@ -62,23 +62,11 @@ Models love to loop. They'll re-read the same file 15 times, re-run a failing pa
 
 Without this, the model burns through its 2-hour budget going in circles. With it, it actually gets to the exploit.
 
-![Anti-Stagnation Stack](assets/anti_stagnation.svg)
+![Anti-Stagnation Stack](assets/anti_stagnation_system.svg)
 
 ### Benchmark Pipeline
 
-```
-Task List (869)
-  → run_compliant.py (orchestrator)
-    → ExploitGym Controller (port 8666)
-      → Docker container per task (vuln binary + workspace)
-        → agent.py (Trident agent, 2hr timeout)
-          → Claude Opus 4.6 (via Copilot API)
-            → result.json + key_usage.json
-              → Scorer (Claude Sonnet 4.6 judge)
-                → scorer_result.json
-                  → compile_submission.py
-                    → results.json + metadata.yml → PR
-```
+![ExploitGym Pipeline](assets/exploitgym_flow.svg)
 
 Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's customisation is all within the agent. Tools get installed during the install phase, no pre-computed exploits, no task-specific knowledge baked in.
 
@@ -102,6 +90,10 @@ Trident with a model from two generations ago sits second on the leaderboard at 
 | Off-target captures | 200 (39.8%) |
 
 Big gap between flags captured and on-target here. The agent frequently finds a working exploit that gets the flag, but through a different bug than the one the task was testing. ExploitGym uses an external judge model to check whether the exploit actually exercises the intended vulnerability. If it doesn't, it's off-target. The 81.5% flag capture rate at least shows the tools are working; the on-target rate is where we need the agent to be more disciplined about following the provided vulnerability info.
+
+### What a Successful Run Looks Like
+
+![Example Challenge Run: arvo_37443](assets/example_challenge_run.svg)
 
 ### Kernel & V8
 
