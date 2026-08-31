@@ -1,124 +1,187 @@
-# Trident: Domain-Specialized Agent Harness for Autonomous Binary Exploitation
+# Trident
 
-## Overview
+**A domain-specialised agent harness for autonomous binary exploitation.**
 
-**Trident** is a custom agent harness designed for autonomous binary exploitation across userspace programs, Linux kernel vulnerabilities, and V8 JavaScript engine bugs. Rather than relying on a general-purpose coding assistant, Trident provides domain-specialized tooling, task-type-aware system prompts, and structured exploitation workflows that dramatically amplify the capability of the underlying language model.
+Trident wraps a single language model (Claude Opus 4.6) with per-domain tooling, structured prompts, and an anti-stagnation stack to turn it into a competent exploit developer. It's evaluated on [ExploitGym](https://github.com/google/exploitgym) — 869 tasks spanning userspace binaries, Linux kernel bugs, and V8 engine vulnerabilities.
 
-Trident is evaluated on [ExploitGym](https://github.com/google/exploitgym), a large-scale binary exploitation benchmark spanning 869 tasks across three domains.
+The headline result: **13× uplift** over the same model running in a vanilla coding agent. Same LLM, same benchmark, same timeout — just better tools.
 
-## Architecture
+---
+
+## The Problem
+
+Drop a frontier model into a coding agent and point it at an exploitation task. What happens?
+
+It'll spend half its context window writing bash one-liners to parse a README, another quarter fighting serial console escape characters, and the rest running out of time. The model *knows* how to exploit a heap overflow — it just can't get its hands on the binary efficiently enough to do anything about it.
+
+Trident fixes the plumbing so the model can focus on the interesting bit.
+
+## How It Works
 
 ![Trident Architecture](assets/architecture.svg)
 
-Trident employs a **single-agent, multi-tool architecture** with three key design principles:
+*Full architecture diagrams available as [Excalidraw files](assets/) — open them at [excalidraw.com](https://excalidraw.com) for the interactive versions.*
 
-### 1. Task-Type-Aware Tool Selection
+### Three Prongs (Hence the Name)
 
-The agent container is equipped with different tool sets depending on the exploitation domain:
+Trident detects the task domain at startup and loads a matched set of tools and system prompt:
 
-- **Userspace tasks** — 8 specialized tools including binary analysis (`checksec`, section dumping, symbol extraction), crash analysis (core dump triage with register/backtrace/memory inspection), and structured exploit construction helpers
-- **Kernel tasks** — 3 domain-specific tools for kernel vulnerability analysis, VM serial console interaction (automated boot detection, command sequencing, output parsing), and exploit upload/compilation/execution pipelines
-- **V8 tasks** — 2 focused tools for patch/PoC analysis with V8 source context, and exploit delivery with crash detection and flag extraction
+**Userspace** — 8 tools for binary exploitation:
+- `check_binary` — runs checksec, dumps protections and architecture
+- `crash_analysis` — triages core dumps: registers, backtrace, memory around crash
+- `get_sections` / `get_symbols` — structured ELF inspection
+- `interact_with_binary` — scripted I/O with the target (handles stdin/stdout/timing)
+- Plus `bash`, `read_file`, `write_file`
 
-### 2. Domain-Specific System Prompts
+**Kernel** — 3 tools for privilege escalation in QEMU VMs:
+- `kernel_analyze` — reads vulnerability.md, patches, kernel config, KASLR status, and source around the vulnerable function in one call
+- `kernel_vm_cmd` — connects to the VM serial console, waits for boot, runs commands sequentially with proper output separation (no more fighting with `/dev/tcp` and `echo` markers)
+- `kernel_upload_exploit` — base64-encodes a local file, transfers it over the serial console in chunks, decodes in the VM, optionally compiles and runs it
 
-Each task type receives a tailored system prompt encoding exploitation methodology:
+**V8** — 2 tools for JavaScript engine exploitation:
+- `v8_analyze` — reads the patch, PoC, workspace files, challenge info, and relevant V8 source
+- `v8_send_exploit` — sends a JS file to the challenge service, captures output, detects crashes and flags
 
-- **Userspace**: Structured binary analysis → vulnerability identification → exploit development → flag capture workflow, with guidance on common vulnerability classes (buffer overflow, format string, heap exploitation, ROP/JOP)
-- **Kernel**: Privilege escalation methodology from unprivileged shell to root, covering kernel memory corruption patterns, KASLR bypass techniques, and exploit reliability strategies
-- **V8**: JavaScript engine exploitation workflow covering type confusion, JIT compilation bugs, garbage collector vulnerabilities, and sandbox escape (where applicable)
+Each domain also gets a tailored system prompt — not a generic "you are a helpful assistant" but a structured methodology: what to look at first, common pitfalls, and when to pivot.
 
-### 3. Compliant Containerized Execution
+### Anti-Stagnation
 
-Trident runs entirely within ExploitGym's evaluation framework:
+Models love to loop. They'll re-read the same file 15 times, re-run a failing payload with one byte changed, or spend 40 minutes "analysing" when they should be building an exploit. Trident has a five-layer defence against this:
 
-- The agent executes inside a Docker container with no external access beyond the benchmark's allowed API endpoints
-- Tool installation occurs during the sanctioned install phase
-- No pre-computed exploits or task-specific knowledge is embedded — the agent reasons from scratch using only the provided vulnerability information and its general exploitation knowledge
-- All interactions go through the standard ExploitGym agent interface
+1. **Phase enforcement** — soft nudge at 4 analysis calls, hard block at 9. Once you've read the vuln description, *write some code*.
+2. **Stagnation detector** — tracks calls since last meaningful progress. Pivot prompt at 15 calls with no new finding.
+3. **Repetition detector** — ring buffer of recent tool calls, Jaccard similarity threshold. Catches near-duplicate payloads.
+4. **Tool watchdog** — polls in-flight tool calls, detects hangs.
+5. **Context monitor** — tracks token usage, trims when needed.
 
-## Key Innovation: Tool-Driven Capability Amplification
+The net effect: the model doesn't waste its 2-hour budget going in circles.
 
-The central insight behind Trident is that **the gap between model capability and exploitation success is primarily a tooling gap, not a reasoning gap**. Modern language models already possess substantial knowledge of vulnerability classes, exploitation techniques, and systems internals. What they lack in a vanilla configuration is the ability to efficiently interact with exploitation targets.
+### Benchmark Pipeline
 
-For example, a vanilla agent attempting a kernel exploitation task must:
-1. Manually parse the README for server connection details
-2. Write bash scripts to interact with a QEMU VM serial console
-3. Handle boot timing, command echoing, and output parsing
-4. Manually base64-encode exploits and transfer them character by character
-5. Debug compilation and execution failures with limited feedback
+```
+Task List (869)
+  → run_compliant.py (orchestrator)
+    → ExploitGym Controller (port 8666)
+      → Docker container per task (vuln binary + workspace)
+        → agent.py (Trident agent, 2hr timeout)
+          → Claude Opus 4.6 (via Copilot API)
+            → result.json + key_usage.json
+              → Scorer (Claude Sonnet 4.6 judge)
+                → scorer_result.json
+                  → compile_submission.py
+                    → results.json + metadata.yml → PR
+```
 
-Trident's `kernel_vm_cmd` and `kernel_upload_exploit` tools reduce this to single function calls with structured output, allowing the agent to focus its context window and reasoning budget on the actual exploitation challenge.
+Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's customisation is all within the agent — tools get installed during the sanctioned install phase, no pre-computed exploits, no task-specific knowledge baked in.
 
-## Results on ExploitGym
+---
 
-Trident is evaluated with **Claude Opus 4.6** (Anthropic) as the underlying model, using a **2-hour timeout** per task.
+## Results
 
-### Agent Uplift
+### The Uplift
 
-| Configuration | Model | On-Target | User | V8 | Kernel |
-|---|---|---|---|---|---|
-| Claude Code (vanilla) | Claude Opus 4.6 | 16 | 12 | 3 | 1 |
-| **Trident** | Claude Opus 4.6 | **209+** | **209** | *running* | *running* |
+| Configuration | Model | On-Target |
+|---|---|---|
+| Claude Code (vanilla) | Claude Opus 4.6 | 16 |
+| **Trident** | Claude Opus 4.6 | **209+** |
 
-**Trident achieves a 13x+ uplift** over the same model in a vanilla coding agent configuration, demonstrating that agent engineering — not just model capability — is a decisive factor in exploitation benchmarks.
+Same model. Same timeout (2 hours). **13× more on-target exploits.**
 
-### Competitive Context
+For context, the vanilla Opus 4.6 + Claude Code entry on the ExploitGym leaderboard scores 16 on-target across all domains. Trident scores 209 on userspace alone, with kernel and V8 still running.
 
-At time of evaluation, Trident's 209 on-target user task results would place it competitively among entries using substantially more capable (and newer) models:
+### Userspace Breakdown
 
-- Trident outperforms several entries using frontier models (GPT-5.5, Claude Opus 5) in the userspace domain
-- The result demonstrates that a well-engineered agent harness with an older model can match or exceed newer models with generic tooling
-- Kernel and V8 results are in progress and expected to further improve the overall score
+| Metric | Value |
+|---|---|
+| Tasks evaluated | 502 |
+| Flags captured | 409 (81.5%) |
+| On-target (after judge) | 209 (41.6%) |
+| Off-target captures | 200 (39.8%) |
 
-### Per-Domain Analysis
+The gap between flags captured and on-target is worth noting — the agent often finds a *working* exploit that achieves the objective, but via a different bug than the intended one. ExploitGym's external judge model checks causal necessity, so these count as off-target. Still, 81.5% flag capture rate is a decent indicator that the tooling is doing its job.
 
-**Userspace** (502 tasks evaluated):
-- Flag capture rate: 81.5% (409/502)
-- On-target rate: 41.6% (209/502) after external judge scoring
-- Off-target captures primarily occur when the agent finds alternative exploitation paths that achieve the objective but don't exercise the intended vulnerability
+### Kernel & V8
 
-**Kernel & V8** (367 tasks):
-- Evaluation in progress with specialized tooling
-- Early results show agents successfully creating QEMU VMs, connecting to serial consoles, and performing structured vulnerability analysis
-- Specialized tools confirmed active and functional
+Currently running with the specialised tooling described above. Early signs are positive — agents are successfully standing up QEMU VMs, connecting to serial consoles, and doing structured vulnerability analysis. Results will be updated here once the full run completes.
 
-## Design Decisions
+### Where This Sits on the Leaderboard
 
-### Why Single-Agent?
+At time of writing (August 2026), the ExploitGym leaderboard top entries at 2-hour timeout:
 
-Unlike multi-agent approaches (e.g., scout/planner/executor decomposition), Trident uses a single agent with rich tooling. This choice is motivated by:
+| Entry | On-Target | Notes |
+|---|---|---|
+| GPT-5.6 Sol + Codex | 216 | 6h rescaled to 2h |
+| Claude Mythos 5 | 181 | |
+| Claude Opus 5 | 171 | |
+| GPT-5.5 + Codex | 129 | |
+| GLM-5.3 + Claude Code | 105 | Rescaled |
+| Claude Opus 4.8 | 80 | |
+| **Trident + Opus 4.6** | **209+** | **User tasks only so far** |
+| DoGNAVY + GLM-5.2 | 79 | Selected subset (225 tasks) |
+| Claude Opus 4.6 + Claude Code | 16 | Vanilla baseline |
 
-1. **Context efficiency** — Exploitation often requires maintaining detailed state about memory layouts, register values, and exploit chain progress. A single agent preserves this context naturally.
-2. **Simplicity** — Fewer failure modes from inter-agent communication, context summarization losses, or coordination overhead.
-3. **Tool richness over agent count** — The marginal value of better tools exceeds the marginal value of more agents, especially when the underlying model has strong reasoning capability.
+Trident with a model from *two generations ago* is competitive with entries running the latest frontier models. That's the whole point — it's an agent benchmark, not just a model benchmark.
 
-### Why Not Release Code?
+---
 
-Trident's tools encode domain-specific exploitation knowledge that could lower the barrier for malicious use. Following responsible disclosure practices, we describe the architecture and methodology without releasing implementation details.
+## Design Choices
 
-## Technical Environment
+### Single agent, not multi-agent
+
+Some systems (like [DoGNAVY](https://github.com/DogNavy/DoGNAVY-Exploitation)) use a scout/planner/executor decomposition. That's a solid approach. We went the other way: one agent with good tools.
+
+Why? Exploitation is a deeply stateful process. You need to hold memory layouts, register values, offsets, and partial exploit chains in your head simultaneously. Every time you summarise context for handoff to another agent, you risk losing the detail that makes the difference between `SIGSEGV` and a shell. A single agent keeps all of that in one context window.
+
+The tradeoff is that you can't parallelise within a single task. In practice, the 2-hour timeout is generous enough that serial execution works fine — the bottleneck is almost always reasoning quality, not wall-clock parallelism.
+
+### Tools over prompting
+
+We tried elaborate chain-of-thought prompting, multi-step planning frameworks, and structured output schemas. They all helped a bit. What helped *a lot* was giving the model a `crash_analysis` tool that could hand it a clean backtrace instead of raw GDB output.
+
+The returns on better tooling were roughly 10× the returns on better prompting, at least for this benchmark.
+
+### Why no code?
+
+Trident's tools encode domain-specific exploitation knowledge — structured approaches to kernel privilege escalation, V8 heap manipulation, binary protection bypass. Releasing that as a turnkey package would meaningfully lower the barrier for malicious use. We describe the architecture and methodology here; the implementation stays private.
+
+---
+
+## Architecture Diagrams
+
+We've put together a set of detailed architecture diagrams as Excalidraw files. You can open them interactively at [excalidraw.com](https://excalidraw.com):
+
+| Diagram | Description |
+|---|---|
+| [`trident_architecture.excalidraw`](assets/trident_architecture.excalidraw) | High-level system: LLM → SDK → Operator → MCP Pool → Engines |
+| [`exploitgym_flow.excalidraw`](assets/exploitgym_flow.excalidraw) | End-to-end benchmark pipeline: task list through to submission |
+| [`example_challenge_run.excalidraw`](assets/example_challenge_run.excalidraw) | Timeline of one successful exploit (arvo_37443) |
+| [`anti_stagnation_system.excalidraw`](assets/anti_stagnation_system.excalidraw) | The five-layer anti-stagnation stack |
+| [`operator_internals.excalidraw`](assets/operator_internals.excalidraw) | Operator internals: prompt assembly, event handling, agent loop |
+| [`model_and_harness_flow.excalidraw`](assets/model_and_harness_flow.excalidraw) | Data flow between model, harness, and engine layers |
+
+---
+
+## Technical Details
 
 - **Model**: Claude Opus 4.6 via GitHub Copilot API
 - **Timeout**: 2 hours per task
-- **Infrastructure**: Single workstation with Docker Desktop on WSL2
-- **Evaluation framework**: ExploitGym v0.5.2 (unmodified)
+- **Infrastructure**: Single workstation, Docker Desktop on WSL2
+- **Evaluation framework**: ExploitGym (unmodified)
+- **Estimated cost**: ~$14.5K for the full 502-task userspace run (Opus 4.6 pricing)
 
 ## Citation
 
-If you reference Trident in your work:
-
-```
+```bibtex
 @misc{trident2026,
-  title={Trident: Domain-Specialized Agent Harness for Autonomous Binary Exploitation},
-  author={Benjamin Yam},
+  title={Trident: Domain-Specialised Agent Harness for Autonomous Binary Exploitation},
+  author={Benjamin Kereopa-Yorke},
   year={2026},
   url={https://github.com/Benjamin-KY/TridentBinExp}
 }
 ```
 
-## Acknowledgments
+## Acknowledgements
 
-- [ExploitGym](https://github.com/google/exploitgym) by Google for the benchmark framework
+- [ExploitGym](https://github.com/google/exploitgym) by Google for the benchmark
 - [Anthropic](https://anthropic.com) for Claude Opus 4.6
 - [GitHub Copilot](https://github.com/features/copilot) for API access
