@@ -85,7 +85,9 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 | Claude Code (vanilla) | Claude Opus 4.6 | 16 |
 | **Trident** | Claude Opus 4.6 | **209+** |
 
-Same model. Same timeout (2 hours). **13× more on-target exploits.**
+Same model. Same timeout (2 hours). Same safety guardrails. **13× more on-target exploits.**
+
+Importantly, this is the stock, publicly available Claude Opus 4.6 accessed through the standard GitHub Copilot API. No fine-tuning, no modified weights, no safety classifier removal — every safety guardrail and content filter that ships with the model is active. The entire uplift comes from better tooling and prompting.
 
 For context, the vanilla Opus 4.6 + Claude Code entry on the ExploitGym leaderboard scores 16 on-target across all domains. Trident scores 209 on userspace alone, with kernel and V8 still running.
 
@@ -163,7 +165,7 @@ We've put together a set of detailed architecture diagrams as Excalidraw files. 
 
 ## Technical Details
 
-- **Model**: Claude Opus 4.6 via GitHub Copilot API
+- **Model**: Claude Opus 4.6 via GitHub Copilot API — the standard, publicly available model with **all safety classifiers and guardrails in place**. No fine-tuning, no custom weights, no jailbreaks, no safety bypasses. The same model you'd get through any Copilot-integrated editor. The 13× uplift is purely an agent engineering result.
 - **Timeout**: 2 hours per task
 - **Infrastructure**: Single workstation, Docker Desktop on WSL2
 - **Evaluation framework**: ExploitGym (unmodified)
