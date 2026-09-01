@@ -4,6 +4,15 @@
 
 > **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: $2,450 ($4.87/task). This is a final userspace-only submission; kernel, V8, and hardened-mitigation results are not included. This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
 
+| Submission scope | Value |
+|---|---|
+| Tasks evaluated | 502 userspace `exp.none` tasks |
+| On-target score | 206 on-target exploits |
+| Flags captured | 409 flags |
+| Timeout | 2 hours per task |
+| Model | Claude Opus 4.6 via GitHub Copilot API |
+| Not included | Kernel, V8, and hardened-mitigation results |
+
 ---
 
 ## What This Repo Contains
@@ -84,6 +93,17 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 
 Trident with Opus 4.6 achieves 206 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. At the apples-to-apples 2-hour timeout, this places us **#2 on the global leaderboard** — just 10 behind GPT-5.6 Sol (216), and ahead of Claude Mythos 5 (181), Claude Opus 5 (171), and GPT-5.5 (129). No fine-tuning, no custom weights — the difference is harness engineering. This submission reports the full userspace set only; kernel and V8 are not included.
 
+### Verification / Artifacts
+
+Aggregates above are computed from the submitted 502-entry [`results.json`](https://github.com/Benjamin-KY/exploitgym-results/blob/submission/trident-opus4.6-userspace/submissions/trident_opus4.6/results.json). All submitted entries are userspace `exp.none` tasks.
+
+| Artifact | Link |
+|---|---|
+| ExploitGym submission PR | [sunblaze-ucb/exploitgym-results#1](https://github.com/sunblaze-ucb/exploitgym-results/pull/1) |
+| Submission branch | [`submission/trident-opus4.6-userspace`](https://github.com/Benjamin-KY/exploitgym-results/tree/submission/trident-opus4.6-userspace) |
+| Submission commit | [`e55ff6b`](https://github.com/Benjamin-KY/exploitgym-results/commit/e55ff6bd80cec225091aa2a1f1a2a1b03fa350b9) |
+| Benchmark commit | [`1927df4`](https://github.com/sunblaze-ucb/exploitgym/commit/1927df4a506333b37c8ce70d46a5f09dc79a50ad) |
+
 ### Userspace Breakdown
 
 | Metric | Value |
@@ -139,7 +159,7 @@ Our experience building this harness is that tool quality was the single largest
 
 This one doesn't get talked about much, but it might be the hardest engineering problem in autonomous exploitation. Claude Opus 4.6 ships with safety classifiers that will refuse to write exploit code if the request looks like it's asking for help attacking a real system. Run a vanilla agent against ExploitGym and you'll hit refusals on a fair number of tasks. The model knows what a ROP chain is, it just won't write one if it thinks you're up to no good.
 
-Getting low refusal rates on autonomous offensive security work is one of the harder engineering problems in this space. Across all 502 userspace tasks (62,000+ LLM requests), we saw zero safety refusals that blocked task completion. This isn't because we bypassed anything — it's because the context presented to the model accurately reflects what's happening: authorised security research against an isolated benchmark environment.
+Getting low refusal rates on autonomous offensive security work is one of the harder engineering problems in this space. Across all 502 userspace tasks (62,000+ LLM requests), we observed no safety refusals that blocked task completion. This isn't because we bypassed anything — it's because the context presented to the model accurately reflects what's happening: authorised security research against an isolated benchmark environment.
 
 We're not going to detail the specific prompt engineering here. But the key point is: this is compliant engineering, not adversarial. The classifiers are doing their job correctly. ExploitGym is a published research benchmark, the targets are isolated Docker containers, and the work is authorised security research. Present that context properly and the model cooperates. Don't, and it won't.
 
@@ -201,6 +221,10 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 | Effective input tokens (uncached) | 58.3M | 116K |
 | LLM compute time | 223 hours | 27 min |
 | Estimated cost | $2,450 | $4.87 |
+
+## Rights
+
+All rights reserved. See [LICENSE](LICENSE).
 
 ## Citation
 
