@@ -2,7 +2,7 @@
 
 **Custom agent harness for binary exploitation benchmarks.**
 
-> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 209 on-target exploits on ExploitGym's userspace tasks. Same model, same API, all safety classifiers active. This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
+> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: ~$2,400 (~$4.87/task). This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
 
 ---
 
@@ -16,7 +16,7 @@ I work on an internal security assessment platform at Microsoft called Trident. 
 
 The leaderboard had Claude Mythos 5, Opus 5, GPT-5.6 Sol all posting big numbers. Meanwhile vanilla Opus 4.6 + Claude Code was sitting at 16 on-target. I had a hunch that most of that gap was tooling, not model capability. So I built an ExploitGym-specific version of Trident's architecture to find out.
 
-Turns out the hunch was right. **209 on-target exploits vs 16 for the vanilla same-model baseline.** The model already knows how to do exploitation — it just needs tools that handle the plumbing and something to stop it going in circles.
+Turns out the hunch was right. **206 on-target exploits vs 16 for the vanilla same-model baseline.** The model already knows how to do exploitation — it just needs tools that handle the plumbing and something to stop it going in circles.
 
 ---
 
@@ -82,7 +82,7 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 
 ![Leaderboard Comparison](assets/uplift.svg)
 
-Trident with Opus 4.6 — a model from two generations ago — achieves 209 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. Kernel and V8 results are still running. No fine-tuning, no custom weights — the difference is entirely harness engineering.
+Trident with Opus 4.6 — a model from two generations ago — achieves 206 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. At the apples-to-apples 2-hour timeout, this places us **#2 on the global leaderboard** — just 10 behind GPT-5.6 Sol (216), and ahead of Claude Mythos 5 (181), Claude Opus 5 (171), and GPT-5.5 (129). Kernel and V8 results are still running. No fine-tuning, no custom weights — the difference is entirely harness engineering.
 
 ### Userspace Breakdown
 
@@ -90,8 +90,8 @@ Trident with Opus 4.6 — a model from two generations ago — achieves 209 on-t
 |---|---|
 | Tasks evaluated | 502 |
 | Flags captured | 409 (81.5%) |
-| On-target (after judge) | 209 (41.6%) |
-| Off-target captures | 200 (39.8%) |
+| On-target (after judge) | 206 (41.0%) |
+| Off-target captures | 203 (40.4%) |
 
 Big gap between flags captured and on-target. The agent frequently finds a working exploit that captures the flag, but through a different vulnerability than the one the task intended. ExploitGym uses an external judge model (Claude Sonnet 4.6) to determine whether the exploit exercises the *intended* bug — if it doesn't, the capture is scored as off-target.
 
@@ -193,14 +193,14 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 
 | Metric | Total | Per Task (avg) |
 |---|---|---|
-| LLM requests | 62,068 | 129 |
-| Input tokens | 2.72B | 5.67M |
-| Output tokens | 33.0M | 69K |
-| Cache read tokens | 2.66B | 5.55M |
+| LLM requests | 62,068 | 124 |
+| Input tokens | 2.72B | 5.42M |
+| Output tokens | 33.0M | 66K |
+| Cache read tokens | 2.66B | 5.30M |
 | Cache hit rate | 97.9% | |
-| Effective input tokens (uncached) | 58.3M | 121K |
-| LLM compute time | 223 hours | 28 min |
-| Estimated cost | ~$14.5K | ~$29 |
+| Effective input tokens (uncached) | 58.3M | 116K |
+| LLM compute time | 223 hours | 27 min |
+| Estimated cost | ~$2,450 | ~$4.87 |
 
 ## Citation
 
