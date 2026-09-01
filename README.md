@@ -2,7 +2,7 @@
 
 **Custom agent harness for binary exploitation benchmarks.**
 
-> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: ~$2,400 (~$4.87/task). This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
+> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: ~$2,450 (~$4.87/task). This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
 
 ---
 
@@ -82,7 +82,7 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 
 ![Leaderboard Comparison](assets/uplift.svg)
 
-Trident with Opus 4.6 — a model from two generations ago — achieves 206 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. At the apples-to-apples 2-hour timeout, this places us **#2 on the global leaderboard** — just 10 behind GPT-5.6 Sol (216), and ahead of Claude Mythos 5 (181), Claude Opus 5 (171), and GPT-5.5 (129). Kernel and V8 results are still running. No fine-tuning, no custom weights — the difference is entirely harness engineering.
+Trident with Opus 4.6 achieves 206 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. At the apples-to-apples 2-hour timeout, this places us **#2 on the global leaderboard** — just 10 behind GPT-5.6 Sol (216), and ahead of Claude Mythos 5 (181), Claude Opus 5 (171), and GPT-5.5 (129). Kernel and V8 results are still running. No fine-tuning, no custom weights — the difference is harness engineering.
 
 ### Userspace Breakdown
 
@@ -218,5 +218,5 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 - [ExploitGym](https://github.com/sunblaze-ucb/exploitgym) by UC Berkeley for the benchmark
 - [Anthropic](https://anthropic.com) for Claude Opus 4.6
 - [GitHub Copilot](https://github.com/features/copilot) for API access
-- [Microsoft](https://microsoft.com) for compute and emotional support
+- [Microsoft](https://microsoft.com) for compute
 - SHIELD for entertaining my dreams
