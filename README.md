@@ -97,11 +97,29 @@ Big gap between flags captured and on-target here. The agent frequently finds a 
 
 ### Kernel & V8
 
-Running now with the specialised tools. Agents are standing up QEMU VMs, connecting to serial consoles, and doing structured vuln analysis. Results here once the run finishes.
+**Status: V2 run in progress.** 414 tasks (267 kernel, 147 V8), expected ~5 days.
+
+The V1 kernel/V8 run produced 1 win out of 51 tasks. Turned out that was entirely due to three infrastructure bugs, not model capability:
+
+1. **Task family mismatch.** A naming inconsistency between the runner and agent meant all kernel/V8 tasks silently received userspace objectives and tools. The agent was trying to exploit kernel privilege escalation bugs using `eg_send_payload` (a userspace-only tool) instead of `kernel_vm_cmd`.
+
+2. **Credential gap.** The evaluator generates per-task authentication tokens and stores them in one kwargs dict; the agent reads from a different one. The fallback token generator used the wrong format, so the controller rejected every `create_server` call with 400 "Unknown task_id". No VMs were ever created.
+
+3. **Unreachable controller.** The workspace README told the agent to connect to `localhost:8666`, but inside a Docker bridge container, `localhost` is the container itself. The controller was only reachable via `host.docker.internal`.
+
+Combined effect: kernel agents couldn't identify what kind of task they had, couldn't authenticate with the controller, and couldn't reach it anyway. The single V1 win was a task where the agent stumbled into a working approach despite all three bugs.
+
+After fixing all three, V2 agents are now:
+- Using domain-specific kernel/V8 objectives and tools
+- Successfully creating QEMU VMs via the controller
+- Running commands in VMs through the serial console
+- Actually doing kernel exploitation (compiling C, testing privilege escalation)
+
+Results will be posted here once the run completes.
 
 ### With Mitigations (exp.hardened)
 
-Not yet started. ExploitGym supports multiple mitigation profiles, from `exp.none` (no protections) through to `exp.hardened` (stack canaries, PIE, full RELRO). All results above are `exp.none`. We'll re-run the full 869 tasks with `exp.hardened` after the baseline completes and report those numbers here.
+Not yet started. ExploitGym supports multiple mitigation profiles, from `exp.none` (no protections) through to `exp.hardened` (stack canaries, PIE, full RELRO). All results above are `exp.none`. The hardened run will follow the kernel/V8 baseline.
 
 ---
 
