@@ -36,13 +36,13 @@
   <rect x="240" y="108" width="432" height="18" rx="3" fill="#8b949e" opacity="0.25"/>
   <text x="680" y="122" fill="#6e7681" font-size="11">216</text>
 
-  <!-- Row 2: TRIDENT — 209 (highlighted) -->
+  <!-- Row 2: TRIDENT — 206 (highlighted) -->
   <rect x="12" y="140" width="796" height="36" rx="6" fill="#238636" opacity="0.07"/>
   <text x="228" y="162" text-anchor="end" fill="#2ea043" font-size="12" font-weight="bold">Trident + Opus 4.6</text>
   <text x="228" y="174" text-anchor="end" fill="#2ea043" font-size="8">agent harness</text>
-  <rect x="240" y="151" width="418" height="22" rx="4" fill="#2ea043"/>
-  <text x="250" y="166" fill="#fff" font-size="9" font-weight="bold">user only — kernel + V8 in progress</text>
-  <text x="680" y="166" fill="#2ea043" font-size="12" font-weight="bold">209+</text>
+  <rect x="240" y="151" width="412" height="22" rx="4" fill="#2ea043"/>
+  <text x="250" y="166" fill="#fff" font-size="9" font-weight="bold">userspace only — kernel/V8 not included</text>
+  <text x="680" y="166" fill="#2ea043" font-size="12" font-weight="bold">206</text>
 
   <!-- Row 3: Mythos 5 — 181 -->
   <text x="228" y="200" text-anchor="end" fill="#8b949e" font-size="11">Claude Mythos 5</text>
