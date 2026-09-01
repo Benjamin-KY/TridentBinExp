@@ -103,7 +103,7 @@ The high off-target rate reflects the agent's strength at finding *any* exploita
 
 ### Kernel & V8
 
-**Status: Running.** 414 tasks (267 kernel, 147 V8), expected ~5 days.
+**Status: Running.** 367 tasks (186 kernel, 181 V8).
 
 The kernel and V8 domains required significant additional engineering beyond the userspace harness — QEMU VM lifecycle management, serial console interaction, credential plumbing through Docker networking, and domain-specific phase nudge tuning. After several iterations on the infrastructure, agents are now successfully:
 - Standing up QEMU VMs via the ExploitGym controller
