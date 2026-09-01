@@ -2,7 +2,7 @@
 
 **Custom agent harness for binary exploitation benchmarks.**
 
-> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: ~$2,450 (~$4.87/task). This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
+> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: $2,450 ($4.87/task). This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
 
 ---
 
@@ -200,7 +200,7 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 | Cache hit rate | 97.9% | |
 | Effective input tokens (uncached) | 58.3M | 116K |
 | LLM compute time | 223 hours | 27 min |
-| Estimated cost | ~$2,450 | ~$4.87 |
+| Estimated cost | $2,450 | $4.87 |
 
 ## Citation
 
