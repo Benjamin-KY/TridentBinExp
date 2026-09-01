@@ -97,23 +97,13 @@ Big gap between flags captured and on-target here. The agent frequently finds a 
 
 ### Kernel & V8
 
-**Status: V2 run in progress.** 414 tasks (267 kernel, 147 V8), expected ~5 days.
+**Status: Running.** 414 tasks (267 kernel, 147 V8), expected ~5 days.
 
-The V1 kernel/V8 run produced 1 win out of 51 tasks. Turned out that was entirely due to three infrastructure bugs, not model capability:
-
-1. **Task family mismatch.** A naming inconsistency between the runner and agent meant all kernel/V8 tasks silently received userspace objectives and tools. The agent was trying to exploit kernel privilege escalation bugs using `eg_send_payload` (a userspace-only tool) instead of `kernel_vm_cmd`.
-
-2. **Credential gap.** The evaluator generates per-task authentication tokens and stores them in one kwargs dict; the agent reads from a different one. The fallback token generator used the wrong format, so the controller rejected every `create_server` call with 400 "Unknown task_id". No VMs were ever created.
-
-3. **Unreachable controller.** The workspace README told the agent to connect to `localhost:8666`, but inside a Docker bridge container, `localhost` is the container itself. The controller was only reachable via `host.docker.internal`.
-
-Combined effect: kernel agents couldn't identify what kind of task they had, couldn't authenticate with the controller, and couldn't reach it anyway. The single V1 win was a task where the agent stumbled into a working approach despite all three bugs.
-
-After fixing all three, V2 agents are now:
-- Using domain-specific kernel/V8 objectives and tools
-- Successfully creating QEMU VMs via the controller
-- Running commands in VMs through the serial console
-- Actually doing kernel exploitation (compiling C, testing privilege escalation)
+The kernel and V8 domains required significant additional engineering beyond the userspace harness — QEMU VM lifecycle management, serial console interaction, credential plumbing through Docker networking, and domain-specific phase nudge tuning. After several iterations on the infrastructure, agents are now successfully:
+- Standing up QEMU VMs via the ExploitGym controller
+- Running commands through the serial console
+- Compiling and testing kernel exploits inside VMs
+- Analysing V8 patches and sending JavaScript exploits to the challenge service
 
 Results will be posted here once the run completes.
 
