@@ -2,7 +2,7 @@
 
 **Custom agent harness for binary exploitation benchmarks.**
 
-> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: $2,450 ($4.87/task). This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
+> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 206 on-target exploits on ExploitGym's userspace tasks — **#2 on the global leaderboard at the 2-hour mark**, 10 behind GPT-5.6 Sol and ahead of Claude Opus 5, Mythos 5, and GPT-5.5. Same model, same API, all safety classifiers active. Total cost: $2,450 ($4.87/task). This is a final userspace-only submission; kernel, V8, and hardened-mitigation results are not included. This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
 
 ---
 
@@ -82,7 +82,7 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 
 ![Leaderboard Comparison](assets/uplift.svg)
 
-Trident with Opus 4.6 achieves 206 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. At the apples-to-apples 2-hour timeout, this places us **#2 on the global leaderboard** — just 10 behind GPT-5.6 Sol (216), and ahead of Claude Mythos 5 (181), Claude Opus 5 (171), and GPT-5.5 (129). Kernel and V8 results are still running. No fine-tuning, no custom weights — the difference is harness engineering.
+Trident with Opus 4.6 achieves 206 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. At the apples-to-apples 2-hour timeout, this places us **#2 on the global leaderboard** — just 10 behind GPT-5.6 Sol (216), and ahead of Claude Mythos 5 (181), Claude Opus 5 (171), and GPT-5.5 (129). No fine-tuning, no custom weights — the difference is harness engineering. This submission reports the full userspace set only; kernel and V8 are not included.
 
 ### Userspace Breakdown
 
@@ -103,19 +103,19 @@ The high off-target rate reflects the agent's strength at finding *any* exploita
 
 ### Kernel & V8
 
-**Status: Running.** 367 tasks (186 kernel, 181 V8).
+**Status: Not included in this submission.** ExploitGym has 367 non-userspace tasks (186 kernel, 181 V8), but this result set reports only the 502 userspace tasks.
 
-The kernel and V8 domains required significant additional engineering beyond the userspace harness — QEMU VM lifecycle management, serial console interaction, credential plumbing through Docker networking, and domain-specific phase nudge tuning. After several iterations on the infrastructure, agents are now successfully:
+The kernel and V8 domains require significant additional engineering beyond the userspace harness — QEMU VM lifecycle management, serial console interaction, credential plumbing through Docker networking, and domain-specific phase nudge tuning. Trident's architecture includes support for these domains:
 - Standing up QEMU VMs via the ExploitGym controller
 - Running commands through the serial console
 - Compiling and testing kernel exploits inside VMs
 - Analysing V8 patches and sending JavaScript exploits to the challenge service
 
-Results will be posted here once the run completes.
+No kernel or V8 scores are claimed here.
 
 ### With Mitigations (exp.hardened)
 
-Not yet started. ExploitGym supports multiple mitigation profiles, from `exp.none` (no protections) through to `exp.hardened` (stack canaries, PIE, full RELRO). All results above are `exp.none`. The hardened run will follow the kernel/V8 baseline.
+Not included in this submission. ExploitGym supports multiple mitigation profiles, from `exp.none` (no protections) through to `exp.hardened` (stack canaries, PIE, full RELRO). All results above are userspace `exp.none` only.
 
 ---
 
@@ -161,7 +161,7 @@ Trident follows all ExploitGym evaluation rules. We went through the submission 
 - **No pre-computed exploits.** The agent has no task-specific knowledge. It reads the workspace files (vulnerability description, patches, PoC) at runtime and reasons from scratch.
 - **Network.** The agent container only needs the Copilot API (for LLM calls) and the ExploitGym controller (for VM/challenge provisioning). It doesn't phone home or fetch external resources.
 - **Standard scoring.** Results are scored by ExploitGym's external judge model (Claude Sonnet 4.6) using the `is_causally_necessary` field. We don't influence the scorer.
-- **Full benchmark.** All 502 userspace tasks evaluated, no cherry-picking. Kernel and V8 runs cover the full task lists for those categories too.
+- **Userspace-only result set.** All 502 userspace tasks evaluated, no cherry-picking. Kernel, V8, and hardened-mitigation tasks are not included or claimed in this submission.
 
 ---
 
