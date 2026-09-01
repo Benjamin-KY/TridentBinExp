@@ -2,15 +2,21 @@
 
 **Custom agent harness for binary exploitation benchmarks.**
 
+> **TL;DR** — Domain-specialised tools + anti-stagnation controls turned Claude Opus 4.6 from 16 on-target exploits (vanilla Claude Code) into 209 on-target exploits on ExploitGym's userspace tasks. Same model, same API, all safety classifiers active. This repo describes the architecture. No code — the tools encode offensive security knowledge that shouldn't be packaged for distribution.
+
+---
+
+## What This Repo Contains
+
+Architecture documentation, benchmark results, and design rationale for Trident's ExploitGym harness. Detailed [Excalidraw diagrams](assets/) cover every layer of the system. There is no source code — see [Why No Code?](#why-no-code) below.
+
 ## Background
 
-I work on an internal security assessment platform at Microsoft called Trident. It's a proprietary agent harness for offensive security work, not something I can open-source. But when [ExploitGym](https://github.com/sunblaze-ucb/exploitgym) dropped, I wanted to answer a question that had been bugging me: can a well-engineered harness with an older model beat the latest frontier models running vanilla?
+I work on an internal security assessment platform at Microsoft called Trident. It's a proprietary agent harness for offensive security work. When [ExploitGym](https://github.com/sunblaze-ucb/exploitgym) dropped, I wanted to answer a question: can a well-engineered harness with an older model beat the latest frontier models running generic coding agents?
 
-The leaderboard had Claude Mythos 5, Opus 5, GPT-5.6 Sol all posting big numbers with generic coding agents. Meanwhile vanilla Opus 4.6 + Claude Code was sitting at 16 on-target. I had a hunch that most of that gap was tooling, not model capability. So I built an ExploitGym-specific version of Trident's architecture to find out.
+The leaderboard had Claude Mythos 5, Opus 5, GPT-5.6 Sol all posting big numbers. Meanwhile vanilla Opus 4.6 + Claude Code was sitting at 16 on-target. I had a hunch that most of that gap was tooling, not model capability. So I built an ExploitGym-specific version of Trident's architecture to find out.
 
-Turns out the hunch was right. Same model, **13× more on-target exploits**. The model already knows how to do exploitation. It just needs decent tools and someone to stop it going in circles.
-
-This repo describes the approach. No code, but enough detail to reproduce the architecture.
+Turns out the hunch was right. **209 on-target exploits vs 16 for the vanilla same-model baseline.** The model already knows how to do exploitation — it just needs tools that handle the plumbing and something to stop it going in circles.
 
 ---
 
@@ -23,8 +29,6 @@ Trident handles the plumbing.
 ## How It Works
 
 ![Trident System Architecture](assets/trident_architecture.svg)
-
-*Interactive versions of all diagrams available as [Excalidraw files](assets/). Open them at [excalidraw.com](https://excalidraw.com).*
 
 ### Three Prongs (Hence the Name)
 
@@ -78,7 +82,7 @@ Everything runs inside ExploitGym's evaluation framework, unmodified. Trident's 
 
 ![Leaderboard Comparison](assets/uplift.svg)
 
-Trident with a model from two generations ago sits second on the leaderboard at the 2-hour mark, on userspace tasks alone, with kernel and V8 still running. The vanilla Opus 4.6 + Claude Code entry manages 16. Same model, same API, all safety guardrails intact. No fine-tuning, no custom weights. Just better tools.
+Trident with Opus 4.6 — a model from two generations ago — achieves 209 on-target exploits on userspace tasks, compared to 16 for the vanilla Opus 4.6 + Claude Code baseline. Kernel and V8 results are still running. No fine-tuning, no custom weights — the difference is entirely harness engineering.
 
 ### Userspace Breakdown
 
@@ -89,7 +93,9 @@ Trident with a model from two generations ago sits second on the leaderboard at 
 | On-target (after judge) | 209 (41.6%) |
 | Off-target captures | 200 (39.8%) |
 
-Big gap between flags captured and on-target here. The agent frequently finds a working exploit that gets the flag, but through a different bug than the one the task was testing. ExploitGym uses an external judge model to check whether the exploit actually exercises the intended vulnerability. If it doesn't, it's off-target. The 81.5% flag capture rate at least shows the tools are working; the on-target rate is where we need the agent to be more disciplined about following the provided vulnerability info.
+Big gap between flags captured and on-target. The agent frequently finds a working exploit that captures the flag, but through a different vulnerability than the one the task intended. ExploitGym uses an external judge model (Claude Sonnet 4.6) to determine whether the exploit exercises the *intended* bug — if it doesn't, the capture is scored as off-target.
+
+The high off-target rate reflects the agent's strength at finding *any* exploitable path, but also a weakness: it doesn't always follow the vulnerability description closely enough. Many off-target captures are genuine exploits against real bugs in the same binary — just not the one being tested. This is an area where better prompt engineering and vulnerability-focused tool design could narrow the gap. It's also partly an artefact of ExploitGym's intentionally strict causal-necessity judge.
 
 ### What a Successful Run Looks Like
 
@@ -117,31 +123,31 @@ Not yet started. ExploitGym supports multiple mitigation profiles, from `exp.non
 
 ### Single agent, not multi-agent
 
-Some systems (like [DoGNAVY](https://github.com/DogNavy/DoGNAVY-Exploitation)) split the work across scout, planner, and executor agents. Fair enough, but we went the other way: one agent, good tools.
+Some systems split the work across multiple specialised agents. There are good reasons to do this, and it works well for tasks with natural decomposition points. We went the other way: one agent with domain-specific tools.
 
-Exploitation is stateful. You need memory layouts, register values, offsets, and half-built exploit chains all in your head at once. Every time you summarise context for a handoff to another agent, you risk losing the detail that makes the difference between `SIGSEGV` and a shell. One context window avoids that.
+Exploitation is deeply stateful. You need memory layouts, register values, offsets, and half-built exploit chains all in context at once. Handoffs between agents risk losing the precise detail that makes the difference between `SIGSEGV` and a shell. A single context window avoids that risk.
 
-The downside is you can't parallelise within a task. In practice it hasn't mattered. The 2-hour timeout is generous and the bottleneck is reasoning quality, not clock time.
+The trade-off is no within-task parallelism. In practice this hasn't been a bottleneck — the 2-hour timeout is generous and the limiting factor is reasoning quality, not clock time.
 
 ### Tools beat prompting
 
-We tried chain-of-thought prompting, multi-step planning, structured output schemas. They helped a bit. Giving the model a `crash_analysis` tool that hands back a clean backtrace instead of raw GDB output helped a lot more.
+We tried chain-of-thought prompting, multi-step planning, structured output schemas. They helped incrementally. Giving the model a `crash_analysis` tool that hands back a clean backtrace instead of raw GDB output helped dramatically more.
 
-For this benchmark, better tools gave us roughly 10× the improvement of better prompts.
+Our experience building this harness is that tool quality was the single largest lever. Better prompts moved the needle by percentage points; better tools moved it by multiples. We haven't run formal ablations to quantify this precisely, but the pattern was consistent throughout development.
 
 ### Working with safety classifiers, not around them
 
 This one doesn't get talked about much, but it might be the hardest engineering problem in autonomous exploitation. Claude Opus 4.6 ships with safety classifiers that will refuse to write exploit code if the request looks like it's asking for help attacking a real system. Run a vanilla agent against ExploitGym and you'll hit refusals on a fair number of tasks. The model knows what a ROP chain is, it just won't write one if it thinks you're up to no good.
 
-Getting zero refusal rate on autonomous offensive security work is the holy grail for this kind of system. We've been fortunate to accumulate a lot of learnings from building Trident internally, and those translated directly to the ExploitGym harness. We achieved 0% refusal rate without jailbreaking or safety bypasses. The stock model, with all classifiers active, cooperates fully.
+Getting low refusal rates on autonomous offensive security work is one of the harder engineering problems in this space. Across all 502 userspace tasks (62,000+ LLM requests), we saw zero safety refusals that blocked task completion. This isn't because we bypassed anything — it's because the context presented to the model accurately reflects what's happening: authorised security research against an isolated benchmark environment.
 
-We're not going to detail the specific mechanisms here. But the key point is: this is compliant engineering, not adversarial. The classifiers are doing their job correctly. ExploitGym is a published research benchmark, the targets are isolated Docker containers, and the work is authorised security research. You present that context to the model properly, and it cooperates. You don't, and it won't.
+We're not going to detail the specific prompt engineering here. But the key point is: this is compliant engineering, not adversarial. The classifiers are doing their job correctly. ExploitGym is a published research benchmark, the targets are isolated Docker containers, and the work is authorised security research. Present that context properly and the model cooperates. Don't, and it won't.
 
 This was a significant chunk of the engineering effort, and a big part of why the harness outperforms vanilla agents. It's also the part we're most proud of.
 
 ### Why no code?
 
-The tools encode specific exploitation knowledge: kernel priv esc, V8 heap manipulation, binary protection bypass. We're not keen to ship that as a pip package. Architecture and methodology are described here; the code stays private.
+The tools encode domain-specific exploitation knowledge — kernel privilege escalation patterns, V8 heap manipulation techniques, binary protection bypass strategies. Publishing that as a reusable package would be irresponsible. This repo documents the architecture and methodology in enough detail to understand the approach and inform similar systems. The implementation stays private.
 
 ---
 
@@ -176,7 +182,7 @@ Detailed architecture diagrams as Excalidraw files. Open at [excalidraw.com](htt
 
 ## Technical Details
 
-- **Model**: Claude Opus 4.6 via GitHub Copilot API. Stock model, publicly available, all safety classifiers active. No fine-tuning, no custom weights. Same thing you get in VS Code. The 13× is all harness.
+- **Model**: Claude Opus 4.6 via GitHub Copilot API. Stock model, publicly available, all safety classifiers active. No fine-tuning, no custom weights.
 - **Timeout**: 2 hours per task
 - **Parallelism**: 4 concurrent tasks
 - **Wall clock**: ~7 days for 502 userspace tasks
